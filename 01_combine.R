@@ -47,5 +47,6 @@ daily_rides %>%
 # I don't know why, so I'll just take these out for now, and write to a CSV file.
 daily_rides <- daily_rides %>%
   filter(rides < 1485) %>%
+  arrange(date) %>%
   write_csv("./data/metrobike_daily_rides.csv")
   
