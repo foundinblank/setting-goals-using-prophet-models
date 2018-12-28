@@ -6,8 +6,8 @@ library(tidyverse)
 library(lubridate)
 
 # Get list of files
-filelist <- list.files("./data", "csv") %>%
-  paste0("./data/", .)
+filelist <- list.files("./data/raw", "csv") %>%
+  paste0("./data/raw/", .)
 
 # Read all CSV files and set start_time to datetime format 
 df <- filelist %>%
@@ -46,7 +46,6 @@ daily_rides %>%
 # There are three crazy spikes, once a year around late September to early October.
 # I don't know why, so I'll just take these out for now, and write to a CSV file.
 daily_rides <- daily_rides %>%
-  filter(rides < 1485) %>%
-  arrange(date) %>%
-  write_csv("./data/metrobike_daily_rides.csv")
-  
+  filter(rides < 1485)
+
+write_csv(daily_rides, "./data/metrobike_daily_rides.csv")
