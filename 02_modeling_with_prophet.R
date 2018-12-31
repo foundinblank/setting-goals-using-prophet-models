@@ -25,6 +25,7 @@ daily_rides_p1 <- daily_rides %>%
   scale_y_continuous(limits = c(0, NA)) +
   labs(x = "", 
        title = "Daily LA Metro Bike Rides") +
+  geom_smooth(color = "red") +
   hrbrthemes::theme_ipsum_rc()
 daily_rides_p1
 ggsave("./figs/daily_rides.png", daily_rides_p1, width = 10, height = 5)
