@@ -96,11 +96,12 @@ ggsave("./figs/projected_daily_rides.png", forecast_p, width = 10, height = 5)
 prophet_plot_components(m, forecast)
 
 # Setting Goals -----------------------------------------------------------
-# Using Prophet, we forecasted 1,272 rides. We have a goal of 1,750.
-# If we were aiming for 1,750, what should our trend look like, considering our model?
+# Using Prophet, we forecasted 1,272 rides. We have a goal of 1,500.
+# If we were aiming for 1,500, what should our trend look like, considering our model?
 
 # Generate our predictive samples. The default is 1000 samples.
 # Sampling can be adjusted by setting uncertainty.samples in the prophet() call
+# m is our Prophet model, and future is our future dataframe (a column of dates)
 samples <- predictive_samples(m, future)
 yhat_samples <- samples[['yhat']] %>%
   as_tibble() %>%
@@ -108,7 +109,7 @@ yhat_samples <- samples[['yhat']] %>%
   select(ds, everything())
 
 # Now find the sample that contains the forecast closest to our goal
-goal_rides <- 1350
+goal_rides <- 1500
 end_forecast <- yhat_samples %>%
   filter(ds == ymd('2019-09-01')) %>%
   gather(key = sample, value = rides, V1:V1000) %>%
@@ -130,7 +131,7 @@ forecast_and_goal <- left_join(forecast, goal_trend, by = "ds") %>%
   mutate(ds = as.POSIXct.Date(ds)) # Necessary for plot()
 
 # Visualize
-plot(m, forecast) + 
+adjusted_p <- plot(m, forecast) + 
   geom_point(data = forecast_and_goal, 
             aes(x = ds, y = goal), 
             color = "red",
@@ -142,17 +143,9 @@ plot(m, forecast) +
        subtitle = "To September 1, 2019") +
   theme_ipsum_rc()
 
-plot(m, forecast) + 
-  geom_point(data = forecast_and_goal, 
-             aes(x = ds, y = goal), 
-             color = "red",
-             alpha = 0.5,
-             size = 0.75) +
-  labs(x = "", 
-       y = "rides", 
-       title = "Projected & Goal Daily Rides", 
-       subtitle = "To September 1, 2019") +
-  theme_ipsum_rc()
+adjusted_p
+ggsave("./figs/projected_and_goal_daily_rides.png", forecast_p, width = 10, height = 5)
+
 
 forecast_and_goal %>%
   filter(is.na(y)) %>%
