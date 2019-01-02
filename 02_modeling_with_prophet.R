@@ -12,6 +12,7 @@ library(prophet)
 library(lubridate)
 library(padr)
 library(hrbrthemes)
+library(ggrepel)
 
 # Load bikeshare data
 daily_rides <- read_csv("./data/metrobike_daily_rides.csv")
@@ -128,7 +129,11 @@ goal_trend <- select(yhat_samples, !!goal_sample) %>%
 forecast_and_goal <- left_join(forecast, goal_trend, by = "ds") %>%
   mutate(ds = ymd(ds)) %>%
   left_join(df, by = "ds") %>%
-  mutate(ds = as.POSIXct.Date(ds)) # Necessary for plot()
+  mutate(ds = as.POSIXct.Date(ds)) %>% # Necessary for plot()
+  mutate(difference = goal - yhat)
+
+# What's the average differnce between our goal and the original projections? 
+mean(forecast_and_goal$difference, na.rm = T)
 
 # Visualize
 adjusted_p <- plot(m, forecast) + 
@@ -144,16 +149,26 @@ adjusted_p <- plot(m, forecast) +
   theme_ipsum_rc()
 
 adjusted_p
-ggsave("./figs/projected_and_goal_daily_rides.png", forecast_p, width = 10, height = 5)
+ggsave("./figs/projected_and_goal_daily_rides.png", adjusted_p, width = 10, height = 5)
 
-
-forecast_and_goal %>%
+# Zoom in chart to just future dates
+adjusted_p_zoomed <- forecast_and_goal %>%
   filter(is.na(y)) %>%
   ggplot(aes(x = ds)) +
   geom_ribbon(aes(ymin = yhat_lower, ymax = yhat_upper, y = yhat), alpha = 0.2, fill = "#0072B2") +
   geom_line(aes(y = yhat), color = "#0072B2") +
-  geom_point(aes(y = goal), color = "red")
+  geom_point(aes(y = goal), color = "red", alpha = 0.5) +
+  labs(x = "", 
+       y = "rides", 
+       title = "Projected & Goal Daily Rides", 
+       subtitle = "To September 1, 2019") +
+  theme_ipsum_rc()
 
+adjusted_p_zoomed
+ggsave("./figs/projected_and_goal_daily_rides_zoomed.png", adjusted_p_zoomed, width = 10, height = 5)
+
+
+# Build 3 projections visualizations
 target <- forecast_and_goal %>%
   filter(is.na(y)) %>%
   mutate(target = case_when(
@@ -162,9 +177,37 @@ target <- forecast_and_goal %>%
   )) %>%
   select(ds, yhat, yhat_lower, yhat_upper, goal, target)
 
-target %>%
+target_lines <- target %>%
+  select(ds, yhat, goal, target) %>%
+  rename(original_projection = yhat,
+         adjusted_projection = goal,
+         high_target = target) %>%
+  gather(key = projection_type, value = rides, original_projection:high_target) %>%
+  mutate(projection_type = fct_relevel(projection_type, c("original_projection", "adjusted_projection", "high_target")))
+
+target_labs <- target_lines %>%
+  filter(ds >= "2019-09-01") %>%
+  mutate(rides = round(rides,0))
+
+three_targets <- target %>%
   ggplot(aes(x = ds)) +
   geom_ribbon(aes(ymin = yhat_lower, ymax = yhat_upper, y = yhat), alpha = 0.2, fill = "#0072B2") +
-  geom_smooth(aes(y = yhat), color = "#0072B2") +
-  geom_smooth(aes(y = goal), color = "red") +
-  geom_smooth(aes(y = target), color = "green")
+  geom_smooth(data = target_lines, 
+              aes(x = ds, y = rides, color = projection_type), 
+              se = F, 
+              method = "loess",
+              span = 0.5) +
+  scale_color_discrete() +
+  labs(x = "", 
+       y = "rides", 
+       title = "Different Ridership Projections", 
+       subtitle = "To September 1, 2019",
+       color = "") +
+  theme_ipsum_rc() +
+  theme(legend.position = "top")
+
+three_targets
+ggsave("./figs/three_targets.png", three_targets, width = 10, height = 5)
+
+
+
