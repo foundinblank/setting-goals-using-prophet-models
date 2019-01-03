@@ -1,2 +1,2 @@
 # Adjusting Prophet models
-Adjusting existing Prophet models to meet business goals or targets. Data, R scripts, and plots are for this Medium article, "blah blah blah". 
+Adjusting existing Prophet models to meet business goals or targets. This repo contains data, R scripts, and plots described in this Medium article, [Goal-Based Forecasting in Prophet & R](https://medium.com/@foundinblank/goal-based-forecasting-in-prophet-r-b79900c64ca6).
